@@ -13,6 +13,9 @@ bool primeiraLeitura = true;
 float ultimaHumidade;
 float ultimaTemp;
 
+unsigned long ultimaLeituraMillis = 0;
+const unsigned long intervaloLeitura = 500; 
+
 void setup() {
   Serial.begin(9600);
   Serial.println(F("Iniciando DHT22 e Bluetooth..."));
@@ -36,35 +39,39 @@ void setup() {
 }
 
 void loop() {
-  float humidade = dht.readHumidity();
-  float temperaturaC = dht.readTemperature();
-  float fahrenheit = dht.readTemperature(true);
+  unsigned long agora = millis();
+  if (agora - ultimaLeituraMillis >= intervaloLeitura) {
+    ultimaLeituraMillis = agora;
 
-  if (isnan(humidade) || isnan(temperaturaC) || isnan(fahrenheit)) {
-    Serial.println(F("Falha ao ler o sensor DHT!"));
-    return;
+    float humidade = dht.readHumidity();
+    float temperaturaC = dht.readTemperature();
+    float fahrenheit = dht.readTemperature(true);
+
+    if (isnan(humidade) || isnan(temperaturaC) || isnan(fahrenheit)) {
+      Serial.println(F("Falha ao ler o sensor DHT!"));
+      return;
+    }
+
+    Serial.print(F("Umidade: "));
+    Serial.print(humidade);
+    Serial.print(F("% Temperatura: "));
+    Serial.print(temperaturaC);
+    Serial.print(F("°C "));
+    Serial.print(fahrenheit);
+    Serial.println(F("°F"));
+
+    if (primeiraLeitura || humidade != ultimaHumidade || temperaturaC != ultimaTemp) {
+      BT.print(F("Umidade: "));
+      BT.print(humidade);
+      BT.print(F("% Temperatura: "));
+      BT.print(temperaturaC);
+      BT.print(F("C "));
+      BT.print(fahrenheit);
+      BT.println(F("F"));
+
+      ultimaHumidade = humidade;
+      ultimaTemp = temperaturaC;
+      primeiraLeitura = false;
+    }
   }
-
-  Serial.print(F("Umidade: "));
-  Serial.print(humidade);
-  Serial.print(F("% Temperatura: "));
-  Serial.print(temperaturaC);
-  Serial.print(F("°C "));
-  Serial.print(fahrenheit);
-  Serial.println(F("°F"));
-
-  if (primeiraLeitura || humidade != ultimaHumidade || temperaturaC != ultimaTemp) {
-    BT.print(F("Umidade: "));
-    BT.print(humidade);
-    BT.print(F("% Temperatura: "));
-    BT.print(temperaturaC);
-    BT.print(F("C "));
-    BT.print(fahrenheit);
-    BT.println(F("F"));
-
-    ultimaHumidade = humidade;
-    ultimaTemp = temperaturaC;
-    primeiraLeitura = false;
-  }
-  delay(500);
 }
